@@ -1,0 +1,305 @@
+@page "/users"
+@using ConsoleAPP
+
+<PageTitle>AD Brugere</PageTitle>
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-primary"><i class="fas fa-users me-2"></i>Active Directory Brugere</h2>
+        <button class="btn btn-success shadow" @onclick="ShowCreateUserModal">
+            <i class="fas fa-user-plus me-1"></i> Opret ny bruger
+        </button>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="input-group shadow-sm">
+                <input type="text" class="form-control" @bind="filterText" placeholder="Filter brugere...">
+                <select class="form-select" @bind="filterCriteria">
+                    <option value="all">Alle felter</option>
+                    <option value="name">Navn</option>
+                    <option value="email">Email</option>
+                    <option value="department">Afdeling</option>
+                </select>
+                <button class="btn btn-primary" @onclick="FilterUsers"><i class="fas fa-search"></i></button>
+            </div>
+        </div>
+    </div>
+
+    @if (users == null)
+    {
+        <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Indlæser...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var user in filteredUsers)
+            {
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; font-size: 1.5rem;">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <div>
+                                    <h5 class="card-title mb-0">@user.Name</h5>
+                                    <small class="text-muted">@user.Username</small>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <span class="badge bg-info me-1"><i class="fas fa-envelope me-1"></i>@user.Email</span>
+                            </div>
+                            <div class="mb-2">
+                                <span class="badge bg-secondary me-1"><i class="fas fa-building me-1"></i>@user.Department</span>
+                                <span class="badge bg-warning text-dark"><i class="fas fa-briefcase me-1"></i>@user.Title</span>
+                            </div>
+                            <div class="mt-auto d-flex justify-content-end gap-2">
+                                <button class="btn btn-danger btn-sm" @onclick="() => ConfirmDeleteUser(user)"><i class="fas fa-trash-alt"></i> Slet</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    @if (showCreateUserModal)
+    {
+        <div class="modal fade show" style="display: block;">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content rounded-4 shadow-lg border-0">
+                    <div class="modal-header bg-primary text-white rounded-top-4">
+                        <h5 class="modal-title"><i class="fas fa-user-plus me-2"></i>Opret ny bruger</h5>
+                        <button type="button" class="btn-close btn-close-white" @onclick="CloseCreateUserModal"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <EditForm Model="newUser" OnValidSubmit="CreateUser">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary />
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Navn</label>
+                                    <InputText class="form-control" @bind-Value="newUser.Name" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Brugernavn</label>
+                                    <InputText class="form-control" @bind-Value="newUser.Username" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Email</label>
+                                    <InputText class="form-control" @bind-Value="newUser.Email" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Afdeling</label>
+                                    <InputText class="form-control" @bind-Value="newUser.Department" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Titel</label>
+                                    <InputText class="form-control" @bind-Value="newUser.Title" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Fornavn</label>
+                                    <InputText class="form-control" @bind-Value="newUser.FirstName" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Efternavn</label>
+                                    <InputText class="form-control" @bind-Value="newUser.LastName" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Initialer</label>
+                                    <InputText class="form-control" @bind-Value="newUser.Initials" />
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end mt-4">
+                                <button type="submit" class="btn btn-primary px-4 shadow"><i class="fas fa-save me-2"></i>Opret</button>
+                                <button type="button" class="btn btn-secondary ms-2 px-4" @onclick="CloseCreateUserModal">Annuller</button>
+                            </div>
+                        </EditForm>
+                        @if (!string.IsNullOrEmpty(createUserError))
+                        {
+                            <div class="alert alert-danger mt-3">@createUserError</div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-backdrop fade show"></div>
+    }
+
+    @if (showDeleteUserModal)
+    {
+        <div class="modal fade show" style="display: block;">
+            <div class="modal-dialog">
+                <div class="modal-content rounded-4 shadow-lg border-0">
+                    <div class="modal-header bg-danger text-white rounded-top-4">
+                        <h5 class="modal-title"><i class="fas fa-trash-alt me-2"></i>Bekræft sletning</h5>
+                        <button type="button" class="btn-close btn-close-white" @onclick="CloseDeleteUserModal"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <p class="fs-5">Er du sikker på, at du vil slette brugeren <strong>@userToDelete?.Name</strong> (@userToDelete?.Username)?</p>
+                        <div class="d-flex justify-content-end gap-2">
+                            <button class="btn btn-danger px-4" @onclick="DeleteUser"><i class="fas fa-trash-alt me-1"></i>Slet</button>
+                            <button class="btn btn-secondary px-4" @onclick="CloseDeleteUserModal">Annuller</button>
+                        </div>
+                        @if (!string.IsNullOrEmpty(deleteUserError))
+                        {
+                            <div class="alert alert-danger mt-3">@deleteUserError</div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-backdrop fade show"></div>
+    }
+</div>
+
+<style>
+    .avatar {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .card {
+        transition: box-shadow 0.2s;
+    }
+    .card:hover {
+        box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    }
+    .modal-content {
+        border-radius: 1.2rem;
+    }
+    .modal-header {
+        border-top-left-radius: 1.2rem;
+        border-top-right-radius: 1.2rem;
+    }
+    .btn-close-white {
+        filter: invert(1);
+    }
+</style>
+
+@code {
+    private List<ADUser> users;
+    private List<ADUser> filteredUsers;
+    private string filterText = "";
+    private string filterCriteria = "all";
+    private bool showCreateUserModal = false;
+    private CreateUserModel newUser = new()
+    {
+        Name = "Test User",
+        Username = "testuser",
+        Email = "testuser@mags.local",
+        Department = "IT",
+        Title = "Test",
+        FirstName = "Test",
+        LastName = "User",
+        Initials = "TU"
+    };
+    private string createUserError;
+    private bool showDeleteUserModal = false;
+    private ADUser userToDelete;
+    private string deleteUserError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+    }
+
+    private async Task LoadUsers()
+    {
+        await Task.Run(() =>
+        {
+            users = ADHelper.GetAllUsers();
+            filteredUsers = users;
+        });
+    }
+
+    private void FilterUsers()
+    {
+        if (string.IsNullOrWhiteSpace(filterText))
+        {
+            filteredUsers = users;
+            return;
+        }
+
+        filteredUsers = ADHelper.SearchUsers(filterText, filterCriteria);
+    }
+
+    private void ShowCreateUserModal()
+    {
+        showCreateUserModal = true;
+        newUser = new();
+        createUserError = null;
+    }
+
+    private void CloseCreateUserModal()
+    {
+        showCreateUserModal = false;
+        createUserError = null;
+    }
+
+    private async Task CreateUser()
+    {
+        try
+        {
+            await Task.Run(() => ADHelper.CreateUser(
+                newUser.Username,
+                newUser.Name,
+                newUser.Email,
+                newUser.Department,
+                newUser.Title,
+                newUser.FirstName,
+                newUser.LastName,
+                newUser.Initials
+            ));
+            showCreateUserModal = false;
+            await LoadUsers();
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Fejl ved oprettelse af bruger: {ex.Message} {ex.InnerException?.Message}");
+        }
+    }
+
+    private void ConfirmDeleteUser(ADUser user)
+    {
+        userToDelete = user;
+        showDeleteUserModal = true;
+        deleteUserError = null;
+    }
+
+    private void CloseDeleteUserModal()
+    {
+        showDeleteUserModal = false;
+        userToDelete = null;
+        deleteUserError = null;
+    }
+
+    private async Task DeleteUser()
+    {
+        try
+        {
+            await Task.Run(() => ADHelper.DeleteUser(userToDelete.Username));
+            showDeleteUserModal = false;
+            await LoadUsers();
+        }
+        catch (Exception ex)
+        {
+            deleteUserError = ex.Message;
+        }
+    }
+
+    public class CreateUserModel
+    {
+        public string Name { get; set; } = "";
+        public string Username { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string Department { get; set; } = "";
+        public string Title { get; set; } = "";
+        public string FirstName { get; set; } = "";
+        public string LastName { get; set; } = "";
+        public string Initials { get; set; } = "";
+    }
+} 

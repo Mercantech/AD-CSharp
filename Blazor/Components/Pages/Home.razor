@@ -1,0 +1,76 @@
+﻿@page "/"
+@using ConsoleAPP
+
+<PageTitle>AD Administration</PageTitle>
+
+<div class="container">
+    <h1>Active Directory Administration</h1>
+    <div class="alert alert-info">
+        Server Status: @serverStatus
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Hurtig Navigation</h5>
+                    <div class="list-group">
+                        <a href="/users" class="list-group-item list-group-item-action">
+                            <i class="fas fa-users"></i> Alle Brugere
+                        </a>
+                        <a href="/groups" class="list-group-item list-group-item-action">
+                            <i class="fas fa-layer-group"></i> Alle Grupper
+                        </a>
+                        <a href="/group-members" class="list-group-item list-group-item-action">
+                            <i class="fas fa-user-friends"></i> Grupper med Medlemmer
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Hurtig Søgning</h5>
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" @bind="searchTerm" 
+                               placeholder="Søg efter brugere eller grupper...">
+                        <button class="btn btn-primary" @onclick="Search">Søg</button>
+                    </div>
+                    @if (searchResults.Any())
+                    {
+                        <div class="mt-3">
+                            <h6>Søgeresultater:</h6>
+                            <div class="list-group">
+                                @foreach (var user in searchResults)
+                                {
+                                    <div class="list-group-item">
+                                        <h6>@user.Name</h6>
+                                        <small>@user.Email - @user.Department</small>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string serverStatus = "Checker...";
+    private string searchTerm = "";
+    private List<ADUser> searchResults = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.Run(() => serverStatus = ADHelper.GetServer());
+    }
+
+    private async Task Search()
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm)) return;
+        await Task.Run(() => searchResults = ADHelper.SearchUsers(searchTerm));
+    }
+}

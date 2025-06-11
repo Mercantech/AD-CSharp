@@ -1,0 +1,197 @@
+@page "/groups"
+@using ConsoleAPP
+
+<PageTitle>AD Grupper</PageTitle>
+
+<div class="container">
+    <h2>Active Directory Grupper</h2>
+    
+    <div class="row mb-3">
+        <div class="col">
+            <div class="input-group">
+                <input type="text" class="form-control" @bind="searchTerm" 
+                       placeholder="Søg efter grupper...">
+                <button class="btn btn-primary" @onclick="SearchGroups">Søg</button>
+            </div>
+        </div>
+    </div>
+
+    <button class="btn btn-success mb-3" @onclick="ShowCreateGroupModal">Opret ny gruppe</button>
+
+    @if (groups == null)
+    {
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Indlæser...</span>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var group in groups)
+            {
+                <div class="col-md-6 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">@group.Name</h5>
+                            <p class="card-text">@group.Description</p>
+                            <button class="btn btn-info" @onclick="() => ShowMembers(group)">
+                                Vis Medlemmer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    @if (selectedGroup != null)
+    {
+        <div class="modal fade show" style="display: block;">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Medlemmer af @selectedGroup.Name</h5>
+                        <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        @if (groupMembers != null && groupMembers.Any())
+                        {
+                            <div class="list-group">
+                                @foreach (var member in groupMembers)
+                                {
+                                    <div class="list-group-item">
+                                        <h6>@member.Name</h6>
+                                        <small>@member.Email - @member.Department</small>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p>Ingen medlemmer fundet.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-backdrop fade show"></div>
+    }
+
+    @if (showCreateGroupModal)
+    {
+        <div class="modal fade show" style="display: block;">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Opret ny gruppe</h5>
+                        <button type="button" class="btn-close" @onclick="CloseCreateGroupModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <EditForm Model="newGroup" OnValidSubmit="CreateGroup">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary />
+                            <div class="mb-3">
+                                <label class="form-label">Gruppenavn</label>
+                                <InputText class="form-control" @bind-Value="newGroup.Name" />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Beskrivelse</label>
+                                <InputText class="form-control" @bind-Value="newGroup.Description" />
+                            </div>
+                            <button type="submit" class="btn btn-primary">Opret</button>
+                        </EditForm>
+                        @if (!string.IsNullOrEmpty(createGroupError))
+                        {
+                            <div class="alert alert-danger mt-2">@createGroupError</div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-backdrop fade show"></div>
+    }
+</div>
+
+@code {
+    private List<ADGroup> groups;
+    private string searchTerm = "";
+    private ADGroup selectedGroup;
+    private List<ADUser> groupMembers;
+    private bool showCreateGroupModal = false;
+    private CreateGroupModel newGroup = new();
+    private string createGroupError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadGroups();
+    }
+
+    private async Task LoadGroups()
+    {
+        await Task.Run(() => groups = ADHelper.GetAllGroups());
+    }
+
+    private async Task SearchGroups()
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            await LoadGroups();
+            return;
+        }
+
+        await Task.Run(() => groups = ADHelper.SearchGroups(searchTerm));
+    }
+
+    private async Task ShowMembers(ADGroup group)
+    {
+        selectedGroup = group;
+        var groupsWithMembers = await Task.Run(() => ADHelper.GetGroupsWithMembers());
+        if (groupsWithMembers.TryGetValue(group.Name, out var members))
+        {
+            groupMembers = members;
+        }
+        else
+        {
+            groupMembers = new List<ADUser>();
+        }
+    }
+
+    private void CloseModal()
+    {
+        selectedGroup = null;
+        groupMembers = null;
+    }
+
+    private void ShowCreateGroupModal()
+    {
+        showCreateGroupModal = true;
+        newGroup = new();
+        createGroupError = null;
+    }
+
+    private void CloseCreateGroupModal()
+    {
+        showCreateGroupModal = false;
+        createGroupError = null;
+    }
+
+    private async Task CreateGroup()
+    {
+        try
+        {
+            await Task.Run(() => ADHelper.CreateGroup(newGroup.Name, newGroup.Description));
+            showCreateGroupModal = false;
+            await LoadGroups();
+        }
+        catch (Exception ex)
+        {
+            createGroupError = ex.Message;
+        }
+    }
+
+    public class CreateGroupModel
+    {
+        public string Name { get; set; } = "";
+        public string Description { get; set; } = "";
+    }
+} 

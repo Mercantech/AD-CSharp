@@ -1,0 +1,163 @@
+@page "/group-members"
+@using ConsoleAPP
+
+<PageTitle>Grupper og Medlemmer</PageTitle>
+
+<div class="container">
+    <h2>Grupper og deres Medlemmer</h2>
+    
+    @if (groupsWithMembers == null)
+    {
+        <div class="text-center mt-4">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Indlæser...</span>
+            </div>
+            <p class="mt-2">Henter grupper og medlemmer...</p>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-md-4">
+                <!-- Gruppe navigation -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="input-group">
+                            <input type="text" class="form-control" @bind="searchTerm" 
+                                   @bind:event="oninput" 
+                                   placeholder="Filtrer grupper...">
+                        </div>
+                    </div>
+                    <div class="list-group list-group-flush" style="max-height: 600px; overflow-y: auto;">
+                        @foreach (var group in FilteredGroups)
+                        {
+                            <button class="list-group-item list-group-item-action @(selectedGroup == group.Key ? "active" : "")"
+                                    @onclick="() => SelectGroup(group.Key)">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>@group.Key</span>
+                                    <span class="badge bg-primary rounded-pill">@group.Value.Count</span>
+                                </div>
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-8">
+                <!-- Medlems detaljer -->
+                @if (selectedGroup != null && groupsWithMembers.ContainsKey(selectedGroup))
+                {
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">@selectedGroup</h5>
+                                <span class="badge bg-info">@groupsWithMembers[selectedGroup].Count medlemmer</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="input-group mb-3">
+                                <input type="text" class="form-control" @bind="memberFilter" 
+                                       @bind:event="oninput" 
+                                       placeholder="Filtrer medlemmer...">
+                            </div>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Navn</th>
+                                            <th>Email</th>
+                                            <th>Afdeling</th>
+                                            <th>Titel</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var member in FilteredMembers)
+                                        {
+                                            <tr>
+                                                <td>@member.Name</td>
+                                                <td>@member.Email</td>
+                                                <td>@member.Department</td>
+                                                <td>@member.Title</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else if (selectedGroup != null)
+                {
+                    <div class="alert alert-info">
+                        Ingen medlemmer fundet i gruppen.
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        Vælg en gruppe fra listen til venstre for at se medlemmer.
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private Dictionary<string, List<ADUser>> groupsWithMembers;
+    private string selectedGroup;
+    private string searchTerm = "";
+    private string memberFilter = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadGroupsWithMembers();
+    }
+
+    private async Task LoadGroupsWithMembers()
+    {
+        await Task.Run(() => 
+        {
+            groupsWithMembers = ADHelper.GetGroupsWithMembers();
+        });
+    }
+
+    private void SelectGroup(string groupName)
+    {
+        selectedGroup = groupName;
+        memberFilter = ""; // Reset member filter when changing groups
+    }
+
+    private IEnumerable<KeyValuePair<string, List<ADUser>>> FilteredGroups
+    {
+        get
+        {
+            if (groupsWithMembers == null) return new Dictionary<string, List<ADUser>>();
+            
+            return string.IsNullOrWhiteSpace(searchTerm)
+                ? groupsWithMembers
+                : groupsWithMembers.Where(g => 
+                    g.Key.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
+    private IEnumerable<ADUser> FilteredMembers
+    {
+        get
+        {
+            if (selectedGroup == null || !groupsWithMembers.ContainsKey(selectedGroup))
+                return new List<ADUser>();
+
+            var members = groupsWithMembers[selectedGroup];
+            
+            return string.IsNullOrWhiteSpace(memberFilter)
+                ? members
+                : members.Where(m =>
+                    m.Name.Contains(memberFilter, StringComparison.OrdinalIgnoreCase) ||
+                    m.Email.Contains(memberFilter, StringComparison.OrdinalIgnoreCase) ||
+                    m.Department.Contains(memberFilter, StringComparison.OrdinalIgnoreCase) ||
+                    m.Title.Contains(memberFilter, StringComparison.OrdinalIgnoreCase));
+        }
+    }
+} 

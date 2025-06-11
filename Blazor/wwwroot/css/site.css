@@ -1,0 +1,39 @@
+.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.card {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.list-group-item {
+  transition: background-color 0.2s;
+  cursor: pointer;
+}
+
+.list-group-item:hover {
+  background-color: #f8f9fa;
+}
+
+.list-group-item.active {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+.table {
+  background-color: white;
+}
+
+.spinner-border {
+  margin: 2rem auto;
+  display: block;
+}
+
+.table-responsive {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.badge {
+  font-size: 0.8em;
+}

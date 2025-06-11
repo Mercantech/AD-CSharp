@@ -1,0 +1,43 @@
+﻿<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">AD Administration</a>
+    </div>
+</div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+    <nav class="nav flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Dashboard
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="users">
+                <span class="fas fa-users" aria-hidden="true"></span> Brugere
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="groups">
+                <span class="fas fa-layer-group" aria-hidden="true"></span> Grupper
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="group-members">
+                <span class="fas fa-user-friends" aria-hidden="true"></span> Gruppe Medlemmer
+            </NavLink>
+        </div>
+    </nav>
+</div>
+
+<style>
+    .fas {
+        margin-right: 8px;
+        width: 20px;
+    }
+</style>
+
